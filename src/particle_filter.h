@@ -11,8 +11,8 @@
 
 #include "helper_functions.h"
 
-struct Particle {
 
+struct Particle {
 	int id;
 	double x;
 	double y;
@@ -22,7 +22,6 @@ struct Particle {
 	std::vector<double> sense_x;
 	std::vector<double> sense_y;
 };
-
 
 
 class ParticleFilter {

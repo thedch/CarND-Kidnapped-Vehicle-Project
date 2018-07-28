@@ -25,24 +25,21 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 
-    // std::random_device rd{};
-    // std::mt19937 gen{rd()}; // Setup for the distribution
+    // default_random_engine gen;
 
-    default_random_engine gen;
+    // normal_distribution<double> x_dist{x, std[0]}; // mean, std_dev
+    // normal_distribution<double> y_dist{y, std[1]};
+    // normal_distribution<double> theta_dist{theta, std[2]};
 
-    normal_distribution<double> x_dist{x, std[0]}; // mean, std_dev
-    normal_distribution<double> y_dist{y, std[1]};
-    normal_distribution<double> theta_dist{theta, std[2]};
+    // num_particles = 100; // TODO: Is this right?
+    // particles.resize(num_particles);
 
-    num_particles = 100; // TODO: Is this right?
-    particles.resize(num_particles);
-
-    for (auto &particle : particles) {
-        particle.x = x_dist(gen);
-        particle.y = y_dist(gen);
-        particle.theta = theta_dist(gen);
-        particle.weight = 1;
-    }
+    // for (auto &particle : particles) {
+    //     particle.x = x_dist(gen);
+    //     particle.y = y_dist(gen);
+    //     particle.theta = theta_dist(gen);
+    //     particle.weight = 1;
+    // }
 
 }
 
@@ -52,8 +49,21 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	// http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
 	// http://www.cplusplus.com/reference/random/default_random_engine/
 
-    // Add gauss noise to velocity and yaw rate
+    default_random_engine gen;
 
+    for (auto &particle : particles) {
+        double new_x = particle.x + velocity/yaw_rate * ( sin(particle.theta + (yaw_rate*delta_t)) - sin(particle.theta));
+        double new_y = particle.y + velocity/yaw_rate * (-cos(particle.theta + (yaw_rate*delta_t)) + cos(particle.theta));
+        double new_theta = particle.theta + yaw_rate * delta_t;
+
+        normal_distribution<double> x_dist{new_x, std_pos[0]}; // mean, std_dev
+        normal_distribution<double> y_dist{new_y, std_pos[1]};
+        normal_distribution<double> theta_dist{new_theta, std_pos[2]};
+
+        particle.x += x_dist(gen);
+        particle.y += y_dist(gen);
+        particle.theta = theta_dist(gen);
+    }
 }
 
 void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {
@@ -98,8 +108,7 @@ void ParticleFilter::resample() {
 //     particle.sense_y = sense_y;
 // }
 
-string ParticleFilter::getAssociations(Particle best)
-{
+string ParticleFilter::getAssociations(Particle best) {
 	vector<int> v = best.associations;
 	stringstream ss;
     copy( v.begin(), v.end(), ostream_iterator<int>(ss, " "));
@@ -107,8 +116,8 @@ string ParticleFilter::getAssociations(Particle best)
     s = s.substr(0, s.length()-1);  // get rid of the trailing space
     return s;
 }
-string ParticleFilter::getSenseX(Particle best)
-{
+
+string ParticleFilter::getSenseX(Particle best) {
 	vector<double> v = best.sense_x;
 	stringstream ss;
     copy( v.begin(), v.end(), ostream_iterator<float>(ss, " "));
@@ -116,8 +125,8 @@ string ParticleFilter::getSenseX(Particle best)
     s = s.substr(0, s.length()-1);  // get rid of the trailing space
     return s;
 }
-string ParticleFilter::getSenseY(Particle best)
-{
+
+string ParticleFilter::getSenseY(Particle best) {
 	vector<double> v = best.sense_y;
 	stringstream ss;
     copy( v.begin(), v.end(), ostream_iterator<float>(ss, " "));

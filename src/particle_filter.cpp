@@ -45,7 +45,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
         p.weight = 1;
 
         particles.push_back(p);
-        weights.push_back(1);
+        weights.push_back(p.weight);
     }
 
     is_initialized = true;
@@ -57,7 +57,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
     // NOTE: When adding noise you may find std::normal_distribution and
     // std::default_random_engine useful.
     // http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
-    // http://www.cplusplus.com/reference/random/default_random_engine/
+    // http://www.cplusplus.com/reference/random/default_random_engine
 
     default_random_engine gen;
 
@@ -109,12 +109,14 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     // https://en.wikipedia.org/wiki/Multivariate_normal_distribution NOTE: The
     // observations are given in the VEHICLE'S coordinate system. Your particles
     // are located according to the MAP'S coordinate system. You will need to
-    // transform between the two systems. Keep in mind that this
-    // transformation requires both rotation AND translation (but no scaling).
-    // The following is a good resource for the theory: https://www.willamette
-    // .edu/~gorr/classes/GeneralGraphics/Transforms/transforms2d.htm and the
-    // following is a good resource for the actual equation to implement (look
-    // at equation 3.33 http://planning.cs.uiuc.edu/node99.html
+    // transform between the two systems. Keep in mind that this transformation
+    // requires both rotation AND translation (but no scaling). The following is
+    // a good resource for the theory:
+    // https://www.willamette.edu/~gorr/classes/GeneralGraphics/Transforms/transforms2d.htm
+    // and the following is a good resource for the actual equation to implement
+    // (look at equation 3.33) http://planning.cs.uiuc.edu/node99.html
+
+    // TODO:
 }
 
 void ParticleFilter::resample() {
@@ -129,13 +131,13 @@ void ParticleFilter::resample() {
     std::vector<Particle> resample_particles;
 
     for (int i = 0; i < num_particles; i++ ) {
-        resample_particles.push_back(particles[distribution(gen)])
+        resample_particles.push_back(particles[distribution(gen)]);
     }
 
     particles = resample_particles;
 }
 
-Particle ParticleFilter::SetAssociations(Particle& particle,
+void ParticleFilter::SetAssociations(Particle& particle,
     const std::vector<int>& associations,
     const std::vector<double>& sense_x,
     const std::vector<double>& sense_y) {
@@ -145,7 +147,7 @@ Particle ParticleFilter::SetAssociations(Particle& particle,
     // associations x mapping already converted to world coordinates sense_y:
     // the associations y mapping already converted to world coordinates
 
-    particle.associations= associations;
+    particle.associations = associations;
     particle.sense_x = sense_x;
     particle.sense_y = sense_y;
 }

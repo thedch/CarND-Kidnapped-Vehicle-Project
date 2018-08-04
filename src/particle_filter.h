@@ -71,7 +71,8 @@ public:
 	 * @param predicted Vector of predicted landmark observations
 	 * @param observations Vector of landmark observations
 	 */
-	void dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations);
+	void dataAssociation(std::vector<single_landmark_s> nearby_landmarks,
+    std::vector<LandmarkObs>& transformed_obs, double max_dist);
 
 	/**
 	 * updateWeights Updates the weights for each particle based on the likelihood of the
@@ -82,7 +83,7 @@ public:
 	 * @param map Map class containing map landmarks
 	 */
 	void updateWeights(double sensor_range, double std_landmark[], const std::vector<LandmarkObs> &observations,
-			const Map &map_landmarks);
+		const Map &map_landmarks);
 
 	/**
 	 * resample Resamples from the updated set of particles to form
@@ -95,7 +96,7 @@ public:
 	 * This can be a very useful debugging tool to make sure transformations are correct and assocations correctly connected
 	 */
 	void SetAssociations(Particle& particle, const std::vector<int>& associations,
-		                     const std::vector<double>& sense_x, const std::vector<double>& sense_y);
+		const std::vector<double>& sense_x, const std::vector<double>& sense_y);
 
 
 	std::string getAssociations(Particle best);

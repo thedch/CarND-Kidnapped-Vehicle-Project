@@ -22,6 +22,9 @@
 
 using namespace std;
 
+std::vector<LandmarkObs> transform_observations(Particle current_location,
+    const std::vector<LandmarkObs> &observations);
+
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
     // TODO: Set the number of particles. Initialize all particles to first
     // position (based on estimates of x, y, theta and their uncertainties
@@ -92,58 +95,49 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
     }
 }
 
-void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted,
-    std::vector<LandmarkObs>& observations) {
-    // TODO: Find the predicted measurement that is closest to each observed
-    // measurement and assign the observed measurement to this particular
-    // landmark. NOTE: this method will NOT be called by the grading code. But
-    // you will probably find it useful to implement this method and use it as
-    // a helper during the updateWeights phase.
-
-}
-
-void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
-		std::vector<LandmarkObs> &observations, const Map &map_landmarks) {
-    // TODO: Update the weights of each particle using a mult-variate Gaussian
-    // distribution. You can read more about this distribution here:
-    // https://en.wikipedia.org/wiki/Multivariate_normal_distribution
-    // NOTE: The observations are given in the VEHICLE'S coordinate system. Your
-    // particles are located according to the MAP'S coordinate system. You will
-    // need to transform between the two systems. Keep in mind that this transformation
-    // requires both rotation AND translation (but no scaling). The following is
-    // a good resource for the theory:
-    // https://www.willamette.edu/~gorr/classes/GeneralGraphics/Transforms/transforms2d.htm
-    // and the following is a good resource for the actual equation to implement
-    // (look at equation 3.33) http://planning.cs.uiuc.edu/node99.html
-
-
-    // 1: convert obs to map reference frame
-    Particle current_location = get_best_particle(particles);
-    transform_observations(current_location, observations);
-
-    // 2: Compare all observations to all landmarks
-    for (auto obs : observations) {
-        float smallest_dist = std::numeric_limits<int>::max();
-        for (auto landmark : map_landmarks.landmark_list) {
-            if (dist(obs.x, obs.y, landmark.x_f, landmark.x_f) < smallest_dist) {
-                smallest_dist = dist(obs.x, obs.y, landmark.x_f, landmark.x_f);
+void ParticleFilter::dataAssociation(std::vector<single_landmark_s> nearby_landmarks,
+    std::vector<LandmarkObs>& transformed_obs, double max_dist) {
+    // Put the index of each nearby_landmarks nearest to each transformed_obs
+    // in the ID field of the transformed_obs element
+    for (auto obs : transformed_obs) {
+        obs.dist_to_landmark = max_dist + 1;
+        for (auto landmark : nearby_landmarks) {
+            double new_dist = dist(obs.x, obs.y, landmark.x_f, landmark.x_f);
+            if (new_dist < obs.dist_to_landmark) {
+                // Save which landmark is nearest, as well as the distance to that landmark
                 obs.id = landmark.id_i;
+                obs.dist_to_landmark = new_dist;
             }
         }
     }
+}
+
+void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
+		const std::vector<LandmarkObs> &observations, const Map &map_landmarks) {
 
     for (auto particle : particles) {
-        // update weights ???
+        // Build a list of landmarks within range of the particle
+        std::vector<single_landmark_s> nearby_landmarks;
+        for (auto landmark : map_landmarks.landmark_list) {
+            if (dist(particle.x, particle.y, landmark.x_f, landmark.y_f) < sensor_range) {
+                nearby_landmarks.push_back(landmark);
+            }
+        }
+        // Convert all observations to global frame based on current particle location
+        std::vector<LandmarkObs> transformed_obs = transform_observations(particle, observations);
+        dataAssociation(nearby_landmarks, transformed_obs, sensor_range);
 
+        float new_weight = 1;
+        for (auto obs : transformed_obs) {
+            new_weight *= obs.dist_to_landmark;
+        }
+        // Particle's new weight is 1 / (all distances multiplied)
+        particle.weight = 1 / new_weight;
     }
 
-
-
-    // Iterate through all landmark observations, compare with map landmarks
-    // There are 42 map landmarks
-    // Use nearest neighbor to figure out which obs is which landmark
-    // Calculate location as the avg of the obs?
-
+    for (int i = 0; i < num_particles; i++) {
+        weights[i] = particles[i].weight;
+    }
 }
 
 void ParticleFilter::resample() {
@@ -206,30 +200,22 @@ string ParticleFilter::getSenseY(Particle best) {
     return s;
 }
 
-// Gets the best particle, which will be used as the car's current location
-Particle get_best_particle(const std::vector<Particle>& particles) {
-    int best_weight = 0;
-    Particle best;
-    for (auto &p : particles) {
-        if (p.weight > best_weight) {
-            best = p;
-            best_weight = best.weight;
-        }
-    }
-    return best;
-}
-
 // The first task is to transform each observation marker from the vehicle's
 // coordinates to the map's coordinates, with respect to our particle.
-void transform_observations(Particle current_location,
-    std::vector<LandmarkObs> &observations) {
+std::vector<LandmarkObs> transform_observations(Particle current_location,
+    const std::vector<LandmarkObs> &observations) {
+
+    std::vector<LandmarkObs> transformed_obs;
 
     double x = current_location.x;
     double y = current_location.y;
     double theta = current_location.theta;
 
     for (auto obs : observations) {
-        obs.x = x + cos(theta)*obs.x - sin(theta)*obs.y;
-        obs.y = y + sin(theta)*obs.x + cos(theta)*obs.y;
+        LandmarkObs tfm_obs;
+        tfm_obs.x = x + cos(theta)*obs.x - sin(theta)*obs.y;
+        tfm_obs.y = y + sin(theta)*obs.x + cos(theta)*obs.y;
+        transformed_obs.push_back(tfm_obs);
     }
+    return transformed_obs;
 }

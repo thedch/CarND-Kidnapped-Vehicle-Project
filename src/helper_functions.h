@@ -37,6 +37,7 @@ struct LandmarkObs {
 	int id;				// ID of matching landmark in the map.
 	double x;			// Local (vehicle coordinates) x position of landmark observation [m]
 	double y;			// Local (vehicle coordinates) y position of landmark observation [m]
+	double dist_to_landmark; // Distance to corresponding landmark
 };
 
 /*
@@ -92,7 +93,7 @@ inline bool read_map_data(std::string filename, Map& map) {
 		iss_map >> id_i;
 
 		// Declare single_landmark:
-		Map::single_landmark_s single_landmark_temp;
+		single_landmark_s single_landmark_temp;
 
 		// Set values
 		single_landmark_temp.id_i = id_i;

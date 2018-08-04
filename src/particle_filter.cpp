@@ -14,6 +14,7 @@
 #include <sstream>
 #include <string>
 #include <iterator>
+#include <limits>
 
 #include "particle_filter.h"
 
@@ -65,7 +66,6 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
     double new_y = 0;
     double new_theta = 0;
 
-
     for (auto &particle : particles) {
         // Handle the case where yaw rate is very small
         if (abs(yaw_rate) < YAW_RATE_THRESHOLD) {
@@ -103,20 +103,47 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted,
 }
 
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
-		const std::vector<LandmarkObs> &observations, const Map &map_landmarks) {
+		std::vector<LandmarkObs> &observations, const Map &map_landmarks) {
     // TODO: Update the weights of each particle using a mult-variate Gaussian
     // distribution. You can read more about this distribution here:
-    // https://en.wikipedia.org/wiki/Multivariate_normal_distribution NOTE: The
-    // observations are given in the VEHICLE'S coordinate system. Your particles
-    // are located according to the MAP'S coordinate system. You will need to
-    // transform between the two systems. Keep in mind that this transformation
+    // https://en.wikipedia.org/wiki/Multivariate_normal_distribution
+    // NOTE: The observations are given in the VEHICLE'S coordinate system. Your
+    // particles are located according to the MAP'S coordinate system. You will
+    // need to transform between the two systems. Keep in mind that this transformation
     // requires both rotation AND translation (but no scaling). The following is
     // a good resource for the theory:
     // https://www.willamette.edu/~gorr/classes/GeneralGraphics/Transforms/transforms2d.htm
     // and the following is a good resource for the actual equation to implement
     // (look at equation 3.33) http://planning.cs.uiuc.edu/node99.html
 
-    // TODO:
+
+    // 1: convert obs to map reference frame
+    Particle current_location = get_best_particle(particles);
+    transform_observations(current_location, observations);
+
+    // 2: Compare all observations to all landmarks
+    for (auto obs : observations) {
+        float smallest_dist = std::numeric_limits<int>::max();
+        for (auto landmark : map_landmarks.landmark_list) {
+            if (dist(obs.x, obs.y, landmark.x_f, landmark.x_f) < smallest_dist) {
+                smallest_dist = dist(obs.x, obs.y, landmark.x_f, landmark.x_f);
+                obs.id = landmark.id_i;
+            }
+        }
+    }
+
+    for (auto particle : particles) {
+        // update weights ???
+
+    }
+
+
+
+    // Iterate through all landmark observations, compare with map landmarks
+    // There are 42 map landmarks
+    // Use nearest neighbor to figure out which obs is which landmark
+    // Calculate location as the avg of the obs?
+
 }
 
 void ParticleFilter::resample() {
@@ -177,4 +204,32 @@ string ParticleFilter::getSenseY(Particle best) {
     string s = ss.str();
     s = s.substr(0, s.length()-1); // get rid of the trailing space
     return s;
+}
+
+// Gets the best particle, which will be used as the car's current location
+Particle get_best_particle(const std::vector<Particle>& particles) {
+    int best_weight = 0;
+    Particle best;
+    for (auto &p : particles) {
+        if (p.weight > best_weight) {
+            best = p;
+            best_weight = best.weight;
+        }
+    }
+    return best;
+}
+
+// The first task is to transform each observation marker from the vehicle's
+// coordinates to the map's coordinates, with respect to our particle.
+void transform_observations(Particle current_location,
+    std::vector<LandmarkObs> &observations) {
+
+    double x = current_location.x;
+    double y = current_location.y;
+    double theta = current_location.theta;
+
+    for (auto obs : observations) {
+        obs.x = x + cos(theta)*obs.x - sin(theta)*obs.y;
+        obs.y = y + sin(theta)*obs.x + cos(theta)*obs.y;
+    }
 }

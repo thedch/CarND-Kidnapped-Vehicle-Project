@@ -94,19 +94,18 @@ int main()
         	std::istream_iterator<float>(),
         	std::back_inserter(x_sense));
 
-        	std::vector<float> y_sense;
+      	std::vector<float> y_sense;
   			std::istringstream iss_y(sense_observations_y);
 
   			std::copy(std::istream_iterator<float>(iss_y),
         	std::istream_iterator<float>(),
         	std::back_inserter(y_sense));
 
-        	for(int i = 0; i < x_sense.size(); i++)
-        	{
+        	for(int i = 0; i < x_sense.size(); i++) {
         		LandmarkObs obs;
         		obs.x = x_sense[i];
-				obs.y = y_sense[i];
-				noisy_observations.push_back(obs);
+				    obs.y = y_sense[i];
+				    noisy_observations.push_back(obs);
         	}
 
 		  // Update the weights and resample

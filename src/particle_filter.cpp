@@ -97,7 +97,7 @@ void ParticleFilter::dataAssociation(std::vector<single_landmark_s> nearby_landm
     for (LandmarkObs &obs : transformed_obs) {
         obs.dist_to_landmark = max_dist + 1;
         for (single_landmark_s landmark : nearby_landmarks) {
-            double new_dist = dist(obs.x, obs.y, landmark.x_f, landmark.x_f);
+            double new_dist = dist(obs.x, obs.y, landmark.x_f, landmark.y_f);
             if (new_dist < obs.dist_to_landmark) {
                 // Save which landmark is nearest, as well as the distance to that landmark
                 obs.id = landmark.id_i;

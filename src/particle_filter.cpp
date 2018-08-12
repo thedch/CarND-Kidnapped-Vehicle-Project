@@ -92,8 +92,9 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 
 void ParticleFilter::dataAssociation(std::vector<single_landmark_s> nearby_landmarks,
     std::vector<LandmarkObs>& transformed_obs, double max_dist) {
-    // Put the index of each nearby_landmarks nearest to each transformed_obs
-    // in the ID field of the transformed_obs element
+    // Puts the index of each nearby_landmarks nearest to each transformed_obs
+    // in the ID field of the transformed_obs element. This tells us how far off
+    // each measurement is, which is needed for particle weighting
     for (LandmarkObs &obs : transformed_obs) {
         obs.dist_to_landmark = max_dist + 1;
         for (single_landmark_s landmark : nearby_landmarks) {
@@ -102,6 +103,8 @@ void ParticleFilter::dataAssociation(std::vector<single_landmark_s> nearby_landm
                 // Save which landmark is nearest, as well as the distance to that landmark
                 obs.id = landmark.id_i;
                 obs.dist_to_landmark = new_dist;
+                obs.x_dist_to_landmark = abs(obs.x - landmark.x_f);
+                obs.y_dist_to_landmark = abs(obs.y - landmark.y_f);
             }
         }
     }
@@ -109,6 +112,12 @@ void ParticleFilter::dataAssociation(std::vector<single_landmark_s> nearby_landm
 
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		const std::vector<LandmarkObs> &observations, const Map &map_landmarks) {
+
+    // Set up standard deviation measurements beforehand for simplicity
+    float x_std = std_landmark[0];
+    float y_std = std_landmark[1];
+    float x_std_2 = pow(x_std, 2);
+    float y_std_2 = pow(y_std, 2);
 
     for (Particle &particle : particles) {
         // Build a list of landmarks within range of the particle
@@ -118,20 +127,19 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
                 nearby_landmarks.push_back(landmark);
             }
         }
+
         // Convert all observations to global frame based on current particle location
         std::vector<LandmarkObs> transformed_obs = transform_observations(particle, observations);
         dataAssociation(nearby_landmarks, transformed_obs, sensor_range);
 
+        // For each observation, use the measurement error to calculate particle
+        // weight using multivariate gaussian equation
         float new_weight = 1;
         for (auto obs : transformed_obs) {
-            new_weight *= obs.dist_to_landmark;
+            new_weight *= 1/(2*M_PI*x_std*y_std) *
+                exp(-(pow(obs.x_dist_to_landmark, 2)/(2*x_std_2) + pow(obs.y_dist_to_landmark, 2)/(2*y_std_2)));
         }
-        // Particle's new weight is 1 / (all distances multiplied)
-        particle.weight = 1 / new_weight;
-    }
-
-    for (int i = 0; i < num_particles; i++) {
-        weights[i] = particles[i].weight;
+        particle.weight = new_weight;
     }
 }
 
@@ -140,6 +148,11 @@ void ParticleFilter::resample() {
     // to their weight. NOTE: You may find std::discrete_distribution helpful
     // here.
     // http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
+
+    // Update the weights vector as a convenience
+    for (int i = 0; i < num_particles; i++) {
+        weights[i] = particles[i].weight;
+    }
 
     discrete_distribution<int> distribution(weights.begin(), weights.end());
 

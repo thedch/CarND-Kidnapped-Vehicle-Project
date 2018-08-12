@@ -38,6 +38,8 @@ struct LandmarkObs {
 	double x;			// Local (vehicle coordinates) x position of landmark observation [m]
 	double y;			// Local (vehicle coordinates) y position of landmark observation [m]
 	double dist_to_landmark; // Distance to corresponding landmark
+	double x_dist_to_landmark; // Distance to corresponding landmark in x space
+	double y_dist_to_landmark; // Distance to corresponding landmark in y space
 };
 
 /*

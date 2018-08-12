@@ -5,7 +5,6 @@
  *  Author: Tiffany Huang
  */
 
-#include <random>
 #include <algorithm>
 #include <iostream>
 #include <numeric>
@@ -31,8 +30,6 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
     // from GPS) and all weights to 1. Add random Gaussian noise to each
     // particle. NOTE: Consult particle_filter.h for more information about this
     // method (and others in this file)
-
-    default_random_engine gen;
 
     normal_distribution<double> x_dist{x, std[0]}; // mean, std_dev
     normal_distribution<double> y_dist{y, std[1]};
@@ -62,8 +59,6 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
     // std::default_random_engine useful.
     // http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
     // http://www.cplusplus.com/reference/random/default_random_engine
-
-    default_random_engine gen;
 
     double new_x = 0;
     double new_y = 0;
@@ -99,9 +94,9 @@ void ParticleFilter::dataAssociation(std::vector<single_landmark_s> nearby_landm
     std::vector<LandmarkObs>& transformed_obs, double max_dist) {
     // Put the index of each nearby_landmarks nearest to each transformed_obs
     // in the ID field of the transformed_obs element
-    for (auto obs : transformed_obs) {
+    for (LandmarkObs &obs : transformed_obs) {
         obs.dist_to_landmark = max_dist + 1;
-        for (auto landmark : nearby_landmarks) {
+        for (single_landmark_s landmark : nearby_landmarks) {
             double new_dist = dist(obs.x, obs.y, landmark.x_f, landmark.x_f);
             if (new_dist < obs.dist_to_landmark) {
                 // Save which landmark is nearest, as well as the distance to that landmark
@@ -115,10 +110,10 @@ void ParticleFilter::dataAssociation(std::vector<single_landmark_s> nearby_landm
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		const std::vector<LandmarkObs> &observations, const Map &map_landmarks) {
 
-    for (auto particle : particles) {
+    for (Particle &particle : particles) {
         // Build a list of landmarks within range of the particle
         std::vector<single_landmark_s> nearby_landmarks;
-        for (auto landmark : map_landmarks.landmark_list) {
+        for (single_landmark_s landmark : map_landmarks.landmark_list) {
             if (dist(particle.x, particle.y, landmark.x_f, landmark.y_f) < sensor_range) {
                 nearby_landmarks.push_back(landmark);
             }
@@ -146,7 +141,6 @@ void ParticleFilter::resample() {
     // here.
     // http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
 
-    default_random_engine gen;
     discrete_distribution<int> distribution(weights.begin(), weights.end());
 
     std::vector<Particle> resample_particles;

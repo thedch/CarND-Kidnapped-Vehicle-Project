@@ -36,6 +36,8 @@ public:
 	// Set of current particles
 	std::vector<Particle> particles;
 
+	std::default_random_engine gen;
+
 	ParticleFilter() {
 		num_particles = 0;
 		is_initialized = false;
